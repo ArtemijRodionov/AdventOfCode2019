@@ -4,38 +4,40 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
-    "os"
 )
 
 type Machine struct {
-	pos     int
-	opCodes []int
+	IP     int
+	memory []int
 }
 
-func newMachine(opCodes []int) *Machine {
-	return &Machine{0, opCodes}
+func newMachine(memory []int) *Machine {
+	machineMemory := make([]int, len(memory))
+	copy(machineMemory, memory)
+	return &Machine{0, machineMemory}
 }
 
-func (m Machine) readOpArgs() (int, int, int) {
-	return m.opCodes[m.pos+1], m.opCodes[m.pos+2], m.opCodes[m.pos+3]
+func (m Machine) readParams() (int, int, int) {
+	return m.memory[m.IP+1], m.memory[m.IP+2], m.memory[m.IP+3]
 }
 
 func (m *Machine) compute() []int {
-	count := len(m.opCodes)
-	for m.pos < count {
-		switch m.opCodes[m.pos] {
+	count := len(m.memory)
+	for m.IP < count {
+		switch m.memory[m.IP] {
 		case 1:
-			ls, rs, dst := m.readOpArgs()
-			m.opCodes[dst] = m.opCodes[ls] + m.opCodes[rs]
-			m.pos += 4
+			ls, rs, dst := m.readParams()
+			m.memory[dst] = m.memory[ls] + m.memory[rs]
+			m.IP += 4
 		case 2:
-			ls, rs, dst := m.readOpArgs()
-			m.opCodes[dst] = m.opCodes[ls] * m.opCodes[rs]
-			m.pos += 4
+			ls, rs, dst := m.readParams()
+			m.memory[dst] = m.memory[ls] * m.memory[rs]
+			m.IP += 4
 		case 99:
-			return m.opCodes
+			return m.memory
 		default:
 			log.Fatal("Something goes wrong", m)
 		}
@@ -51,14 +53,28 @@ func main() {
 	}
 
 	tokens := strings.Split(strings.Trim(string(c), "\n"), ",")
-	opCodes := make([]int, len(tokens))
+	memory := make([]int, len(tokens))
 	for i, code := range tokens {
-		opCodes[i], err = strconv.Atoi(code)
+		memory[i], err = strconv.Atoi(code)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	m := newMachine(opCodes)
-	fmt.Println(m.compute())
+	m := newMachine(memory)
+	m.memory[1] = 12
+	m.memory[2] = 2
+	fmt.Println("1:", m.compute()[0])
+
+	for i := 0; i < 100; i++ {
+		for j := 0; j < 100; j++ {
+			m := newMachine(memory)
+			m.memory[1] = i
+			m.memory[2] = j
+			if res := m.compute(); res[0] == 19690720 {
+				fmt.Println("2:", i, j)
+				return
+			}
+		}
+	}
 }
