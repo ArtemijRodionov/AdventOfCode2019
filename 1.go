@@ -3,13 +3,17 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
 )
 
 func main() {
-	content, err := ioutil.ReadAll(os.Stdin)
+	if len(os.Args) != 2 {
+		log.Fatal("Provide a file name as argument")
+	}
+	content, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}

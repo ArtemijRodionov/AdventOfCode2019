@@ -69,7 +69,10 @@ func run(low, high int, isMatching Match) int {
 }
 
 func main() {
-	digitsRange, err := ioutil.ReadAll(os.Stdin)
+	if len(os.Args) != 2 {
+		log.Fatal("Provide a file name as argument")
+	}
+	digitsRange, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -51,7 +51,10 @@ func parse(input string) map[Dot]int {
 }
 
 func main() {
-	input, err := ioutil.ReadAll(os.Stdin)
+	if len(os.Args) != 2 {
+		log.Fatal("Provide a file name as argument")
+	}
+	input, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}

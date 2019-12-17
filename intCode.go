@@ -137,7 +137,7 @@ func (m *IntCode) Execute(op Op) bool {
 }
 
 func (m *IntCode) Run() {
-	go (func() {
+	go func() {
 		for len(m.memory) > m.IP {
 			op := Op{m.memory[m.IP]}
 			m.IP++
@@ -147,5 +147,5 @@ func (m *IntCode) Run() {
 			}
 		}
 		m.Halt <- fmt.Errorf("Ret instruction is missed: %v", m.memory)
-	})()
+	}()
 }
