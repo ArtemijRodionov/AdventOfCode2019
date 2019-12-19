@@ -12,16 +12,10 @@ type Mode int
 const (
 	ParamPosition Mode = iota
 	ParamImmediate
+	ParamRelative
 )
 
-// NewParam(32102, 0) => Param { mode 1}
-// NewParam(32102, 1) => Param { mode 2}
-// NewParam(32102, 2) => Param { mode 3}
-func NewMode(code, position int) Mode {
-	return Mode(int(code/int(math.Pow(10.0, float64(position+2)))) % 10)
-}
-
-// Instruction
+// Instructions
 const (
 	// Start from 1
 	OpSum OpCode = iota + 1
@@ -32,8 +26,16 @@ const (
 	OpJmpIfFalse
 	OpLessThan
 	OpEquals
+	OpAdjustsRB
 	OpRet OpCode = 99
 )
+
+// NewParam(32102, 0) => Param { mode 1}
+// NewParam(32102, 1) => Param { mode 2}
+// NewParam(32102, 2) => Param { mode 3}
+func NewMode(code, position int) Mode {
+	return Mode(int(code/int(math.Pow(10.0, float64(position+2)))) % 10)
+}
 
 type Op struct {
 	code int
@@ -50,7 +52,7 @@ func (o Op) Modes() []Mode {
 		length = 3
 	case OpJmpIfTrue, OpJmpIfFalse:
 		length = 2
-	case OpInput, OpOutput:
+	case OpInput, OpOutput, OpAdjustsRB:
 		length = 1
 	case OpRet:
 		length = 0
@@ -66,6 +68,7 @@ func (o Op) Modes() []Mode {
 // VM
 type IntCode struct {
 	IP     int
+	RB     int
 	memory []int
 	Output chan int
 	Input  chan int
@@ -73,31 +76,52 @@ type IntCode struct {
 }
 
 func NewIntCode(memory []int) IntCode {
-	machine := IntCode{0, make([]int, len(memory)), make(chan int), make(chan int), make(chan error)}
+	machine := IntCode{
+		0,
+		0,
+		make([]int, len(memory)),
+		make(chan int),
+		make(chan int),
+		make(chan error)}
 	copy(machine.memory, memory)
 	return machine
 }
 
-func (m *IntCode) Address(mode Mode) int {
-	address := 0
-	switch mode {
-	case ParamPosition:
-		address = m.memory[m.IP]
-	case ParamImmediate:
-		address = m.IP
-	}
-	return address
+func (m *IntCode) ReadOp() Op {
+	op := Op{m.memory[m.IP]}
+	m.IP++
+	return op
 }
 
-func (m *IntCode) Execute(op Op) bool {
+func (m *IntCode) ReadParamAddrs(op Op) []int {
 	modes := op.Modes()
-	address := make([]int, len(modes))
+	addrs := make([]int, len(modes))
 	for i, mode := range modes {
-		address[i] = m.Address(mode)
+		address := 0
+		switch mode {
+		case ParamPosition:
+			address = m.memory[m.IP]
+		case ParamImmediate:
+			address = m.IP
+		case ParamRelative:
+			address = m.RB + m.memory[m.IP]
+		}
+
+		// expand memory in out of range case
+		if address >= len(m.memory) {
+			expandAt := make([]int, address-len(m.memory)+1)
+			m.memory = append(m.memory, expandAt...)
+		}
+
+		addrs[i] = address
 		m.IP++
 	}
 
-	switch op.OpCode() {
+	return addrs
+}
+
+func (m *IntCode) Execute(op OpCode, address []int) bool {
+	switch op {
 	case OpSum:
 		ls, rs, dst := address[0], address[1], address[2]
 		m.memory[dst] = m.memory[ls] + m.memory[rs]
@@ -130,6 +154,8 @@ func (m *IntCode) Execute(op Op) bool {
 			toSet = 1
 		}
 		m.memory[dst] = toSet
+	case OpAdjustsRB:
+		m.RB += m.memory[address[0]]
 	case OpRet:
 		return true
 	}
@@ -139,9 +165,7 @@ func (m *IntCode) Execute(op Op) bool {
 func (m *IntCode) Run() {
 	go func() {
 		for len(m.memory) > m.IP {
-			op := Op{m.memory[m.IP]}
-			m.IP++
-			if m.Execute(op) {
+			if op := m.ReadOp(); m.Execute(op.OpCode(), m.ReadParamAddrs(op)) {
 				m.Halt <- nil
 				return
 			}
