@@ -1,4 +1,4 @@
-all: 1 2 3 4 5 6 7 8 9
+all: 1 2 3 4 5 6 7 8 9 10
 
 1:
 	go run 1.go 1.txt
@@ -27,3 +27,5 @@ all: 1 2 3 4 5 6 7 8 9
 9:
 	go run 9.go intCode.go 9.txt
 
+10:
+	go run 10.go 10.txt
