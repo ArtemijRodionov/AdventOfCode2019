@@ -1,31 +1,31 @@
 all: 1 2 3 4 5 6 7 8 9 10 11
 
 1:
-	go run 1.go 1.txt
+	go run 01.go 01.txt
 
 2:
-	go run 2.go 2.txt
+	go run 02.go 02.txt
 
 3:
-	go run 3.go 3.txt
+	go run 03.go 03.txt
 
 4:
-	go run 4.go 4.txt
+	go run 04.go 04.txt
 
 5:
-	go run 5.go intCode.go 5.txt
+	go run 05.go intCode.go 05.txt
 
 6:
-	go run 6.go 6.txt
+	go run 06.go 06.txt
 
 7:
-	go run 7.go intCode.go 7.txt
+	go run 07.go intCode.go 07.txt
 
 8:
-	go run 8.go 8.txt
+	go run 08.go 08.txt
 
 9:
-	go run 9.go intCode.go 9.txt
+	go run 09.go intCode.go 09.txt
 
 10:
 	go run 10.go 10.txt
